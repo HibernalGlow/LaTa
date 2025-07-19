@@ -23,16 +23,94 @@ class TaskfileLauncher:
         self._load_taskfile()
     
     def _find_taskfile(self) -> Path:
-        """查找 Taskfile.yml - 优先使用脚本同目录下的，然后是当前工作目录"""
-        # 首先尝试脚本同目录下的 Taskfile.yml
+        """查找 Taskfile.yml - 按优先级搜索多个位置"""
+        # 搜索优先级：
+        # 1. 调用脚本的目录（如果是通过外部脚本调用）
+        # 2. 当前工作目录
+        # 3. 当前目录的父目录（递归向上查找）
+        # 4. 用户主目录
+        # 5. 包内示例文件（仅作为最后的备选）
+
+        search_paths = []
+
+        # 1. 检查是否有调用脚本的目录信息
+        # 通过环境变量传递调用脚本的目录
+        caller_script_dir = os.environ.get('LATA_CALLER_DIR')
+        if caller_script_dir:
+            caller_dir = Path(caller_script_dir)
+            caller_taskfile = caller_dir / "Taskfile.yml"
+            search_paths.append(caller_taskfile)
+
+        # 2. 当前工作目录及其父目录
+        current_dir = Path.cwd()
+        for parent in [current_dir] + list(current_dir.parents):
+            taskfile_path = parent / "Taskfile.yml"
+            search_paths.append(taskfile_path)
+            # 只向上查找 5 层，避免搜索过深
+            if len(search_paths) >= 6:  # 调整为6，因为可能有caller_dir
+                break
+
+        # 3. 用户主目录
+        home_taskfile = Path.home() / "Taskfile.yml"
+        search_paths.append(home_taskfile)
+
+        # 4. 包内示例文件（最后备选）
         script_dir = Path(__file__).parent
-        script_taskfile = script_dir / "Taskfile.yml"
-        
-        if script_taskfile.exists():
-            return script_taskfile
-        else:
-            # 如果脚本目录没有，则使用当前工作目录
-            return Path("Taskfile.yml")
+        package_taskfile = script_dir / "Taskfile.yml"
+        search_paths.append(package_taskfile)
+
+        # 查找第一个存在的文件
+        for taskfile_path in search_paths:
+            if taskfile_path.exists():
+                return taskfile_path
+
+        # 如果都不存在，返回调用脚本目录或当前目录的 Taskfile.yml
+        if caller_script_dir:
+            return Path(caller_script_dir) / "Taskfile.yml"
+        return Path("Taskfile.yml")
+
+    def show_search_info(self):
+        """显示 Taskfile 搜索信息"""
+        console.print("\n[blue]Taskfile.yml 搜索路径信息:[/blue]")
+
+        search_index = 1
+
+        # 调用脚本目录
+        caller_script_dir = os.environ.get('LATA_CALLER_DIR')
+        if caller_script_dir:
+            caller_dir = Path(caller_script_dir)
+            caller_taskfile = caller_dir / "Taskfile.yml"
+            exists = "[green]YES[/green]" if caller_taskfile.exists() else "[red]NO[/red]"
+            console.print(f"  {search_index}. {exists} {caller_taskfile} (调用脚本目录)")
+            search_index += 1
+
+        # 当前工作目录及父目录
+        current_dir = Path.cwd()
+        console.print(f"[cyan]当前工作目录: {current_dir}[/cyan]")
+
+        search_paths = []
+        for parent in [current_dir] + list(current_dir.parents):
+            taskfile_path = parent / "Taskfile.yml"
+            exists = "[green]YES[/green]" if taskfile_path.exists() else "[red]NO[/red]"
+            console.print(f"  {search_index}. {exists} {taskfile_path}")
+            search_paths.append(taskfile_path)
+            search_index += 1
+            if len(search_paths) >= 5:
+                break
+
+        # 用户主目录
+        home_taskfile = Path.home() / "Taskfile.yml"
+        exists = "[green]YES[/green]" if home_taskfile.exists() else "[red]NO[/red]"
+        console.print(f"  {search_index}. {exists} {home_taskfile} (用户主目录)")
+        search_index += 1
+
+        # 包内示例
+        script_dir = Path(__file__).parent
+        package_taskfile = script_dir / "Taskfile.yml"
+        exists = "[green]YES[/green]" if package_taskfile.exists() else "[red]NO[/red]"
+        console.print(f"  {search_index}. {exists} {package_taskfile} (包内示例)")
+
+        console.print(f"\n[yellow]当前使用: {self.taskfile_path.absolute()}[/yellow]")
     
     def _load_taskfile(self):
         """加载 Taskfile.yml 并解析任务"""
@@ -91,7 +169,7 @@ class TaskfileLauncher:
                 choice = Prompt.ask(
                     "[bold green]请输入选项编号[/bold green]",
                     choices=[str(i) for i in range(len(task_names) + 1)],
-                    default="0"
+                    default="1"
                 )
 
                 if choice == "0":
@@ -161,6 +239,12 @@ class TaskfileLauncher:
         """运行交互式任务选择器"""
         if not self.taskfile_path.exists():
             console.print(f"[red]错误: Taskfile 不存在: {self.taskfile_path}[/red]")
+            console.print("\n[yellow]提示: Taskfile.yml 搜索路径优先级:[/yellow]")
+            console.print("  1. 当前工作目录及其父目录")
+            console.print("  2. 用户主目录")
+            console.print("  3. 包内示例文件")
+            console.print(f"\n[cyan]当前工作目录: {Path.cwd()}[/cyan]")
+            console.print(f"[cyan]期望的 Taskfile 位置: {self.taskfile_path.absolute()}[/cyan]")
             return 1
 
         try:
@@ -214,10 +298,34 @@ def launch(taskfile_path: Path = None) -> int:
 def main():
     """主入口函数"""
     try:
-        # 支持命令行参数指定 Taskfile 路径
+        # 处理命令行参数
         if len(sys.argv) > 1:
-            taskfile_path = Path(sys.argv[1])
-            sys.exit(launch(taskfile_path))
+            arg = sys.argv[1]
+
+            # 显示搜索信息
+            if arg in ["-i", "--info", "--search-info"]:
+                launcher = TaskfileLauncher()
+                launcher.show_search_info()
+                sys.exit(0)
+
+            # 显示帮助
+            elif arg in ["-h", "--help"]:
+                console.print("[bold blue]LaTa - Taskfile 启动器[/bold blue]")
+                console.print("\n[yellow]用法:[/yellow]")
+                console.print("  lata                    # 启动交互式任务选择器")
+                console.print("  lata <taskfile_path>    # 使用指定的 Taskfile")
+                console.print("  lata -i, --info         # 显示 Taskfile 搜索路径信息")
+                console.print("  lata -h, --help         # 显示此帮助信息")
+                console.print("\n[yellow]Taskfile 搜索优先级:[/yellow]")
+                console.print("  1. 当前工作目录及其父目录（向上最多 5 层）")
+                console.print("  2. 用户主目录")
+                console.print("  3. 包内示例文件")
+                sys.exit(0)
+
+            # 指定 Taskfile 路径
+            else:
+                taskfile_path = Path(arg)
+                sys.exit(launch(taskfile_path))
         else:
             sys.exit(launch())
     except KeyboardInterrupt:
