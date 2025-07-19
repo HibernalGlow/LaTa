@@ -1,0 +1,11 @@
+version: '3'
+
+vars:
+  PYTHON_CMD: autorepack
+
+tasks:
+  default:
+    desc: "显示可用任务列表"
+    cmds:
+      - task --list
+    silent: true

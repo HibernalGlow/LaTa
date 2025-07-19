@@ -1,0 +1,45 @@
+[project]
+name = "lata"
+version = "0.1.2"
+description = "一个简单易用的 Taskfile 启动器包，提供交互式任务选择界面"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "rich>=10.0.0",
+    "pyyaml>=5.0.0",
+]
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+license = "MIT"
+keywords = ["taskfile", "task", "launcher", "cli", "interactive"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Systems Administration",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/lata"
+Repository = "https://github.com/yourusername/lata"
+Issues = "https://github.com/yourusername/lata/issues"
+
+[project.scripts]
+lata = "lata.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["lata"]
+package-dir = {"" = "src"}
+
+
