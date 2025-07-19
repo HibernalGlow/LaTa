@@ -25,14 +25,14 @@ class TaskfileLauncher:
     def _find_taskfile(self) -> Path:
         """查找 Taskfile.yml - 优先使用脚本同目录下的，然后是当前工作目录"""
         # 首先尝试脚本同目录下的 Taskfile.yml
-        script_dir = Path(__file__).parent
-        script_taskfile = script_dir / "Taskfile.yml"
+        # script_dir = Path(__file__).parent
+        # script_taskfile = script_dir / "Taskfile.yml"
         
-        if script_taskfile.exists():
-            return script_taskfile
-        else:
+        # if script_taskfile.exists():
+        #     return script_taskfile
+        # else:
             # 如果脚本目录没有，则使用当前工作目录
-            return Path("Taskfile.yml")
+        return Path("Taskfile.yml")
     
     def _load_taskfile(self):
         """加载 Taskfile.yml 并解析任务"""
@@ -91,7 +91,7 @@ class TaskfileLauncher:
                 choice = Prompt.ask(
                     "[bold green]请输入选项编号[/bold green]",
                     choices=[str(i) for i in range(len(task_names) + 1)],
-                    default="0"
+                    default="1"
                 )
 
                 if choice == "0":
