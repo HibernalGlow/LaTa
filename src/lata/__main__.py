@@ -159,6 +159,8 @@ class TaskfileLauncher:
     
     def run(self) -> int:
         """运行交互式任务选择器"""
+        console.print(f"[blue]正在使用的 Taskfile: {self.taskfile_path.resolve()}[/blue]")
+        
         if not self.taskfile_path.exists():
             console.print(f"[red]错误: Taskfile 不存在: {self.taskfile_path}[/red]")
             return 1
@@ -188,7 +190,7 @@ class TaskfileLauncher:
 
                 # 询问是否继续
                 try:
-                    if not Confirm.ask("\n[yellow]是否继续选择其他任务?[/yellow]", default=True):
+                    if not Confirm.ask("\n[yellow]是否继续选择其他任务?[/yellow]", default=False):
                         break
                 except KeyboardInterrupt:
                     console.print("\n[yellow]检测到 Ctrl+C，正在安全退出...[/yellow]")
