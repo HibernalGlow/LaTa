@@ -4,7 +4,7 @@ Taskfile 启动器包
 提供简单的一键导入启动功能
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 # 延迟导入以避免循环导入问题
 def get_launcher():
